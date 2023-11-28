@@ -14,25 +14,28 @@ close all
 % injectors in the center of the reservoir.
 
 % Grid
-cartDims = [  60,  220,  20];
-physDims = [1200, 2200, 2*cartDims(end)] .* ft();   % ft -> m
-G  = cartGrid(cartDims, physDims);
-G  = computeGeometry(G);
+grdecl = fullfile(getDatasetPath('Geothermal'), 'test_ouput.grdecl');
+grdecl = readGRDECL(grdecl);
 
-% Rock
-rock = getSPE10rock(1:cartDims(end));
-rock.poro = max(rock.poro, 1e-4);
+actnum        = grdecl.ACTNUM;
+grdecl.ACTNUM = ones(prod(grdecl.cartDims),1);
+G             = processGRDECL(grdecl, 'checkgrid', false);
+G             = computeGeometry(G(1));
+
+rock = grdecl2Rock(grdecl, G.cells.indexMap);
+is_pos                = rock.perm(:, 3) > 0;
+rock.perm(~is_pos, 3) = min(rock.perm(is_pos, 3));
+rock.perm = convertFrom(rock.perm, milli*darcy);
 
 % Wells
 W = [];
-wname    = {'P1', 'P2', 'P3', 'P4', 'I1', 'I2'};
-wtype    = {'bhp', 'bhp', 'bhp', 'bhp', 'bhp', 'bhp'};
-wtarget  = [200,   200,   200,   200,   500,   500  ] .* barsa();
-wrad     = [0.125, 0.125, 0.125, 0.125, 0.125, 0.125] .* meter;
-wloc     = [  1,   60,     1,   60,  20, 40;
-              1,    1,   220,  220, 130, 90];
-for w = 1 : numel(wtype),
-   W = verticalWell(W, G, rock, wloc(1,w), wloc(2,w), 1 : cartDims(end), ...
+wname    = {'P1', 'I1' };
+wtype    = {'rate', 'rate'};
+wtarget  = [-7500*day, 7500*day];
+wrad     = [0.125, 0.125] .* meter;
+wloc     = [  246,   60;    30, 30];
+for w = 1 : numel(wtype)
+   W = verticalWell(W, G, rock, wloc(1,w), wloc(2,w), 9 : 20, ...
                     'Type', wtype{w}, 'Val', wtarget(w), ...
                     'Radius', wrad(w), 'Name', wname{w}, ...
                     'InnerProduct', 'ip_tpf');
