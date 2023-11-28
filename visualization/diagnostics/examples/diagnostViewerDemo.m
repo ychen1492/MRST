@@ -6,7 +6,7 @@
 mrstModule add diagnostics mrst-gui incomp
 
 %% Set up grid and rock
-grdecl = fullfile(getDatasetPath('SAIGUP'), 'SAIGUP.GRDECL');
+grdecl = fullfile(getDatasetPath('Geothermal'), 'test_ouput.grdecl');
 grdecl = readGRDECL(grdecl);
 
 actnum        = grdecl.ACTNUM;
@@ -27,33 +27,36 @@ pv = poreVolume(G, rock);
 ijk = gridLogicalIndices(G);
 W = [];
 gcz = G.cells.centroids;
+x = [];
 [pi,ii] = deal(1);
-for i = 5:12:G.cartDims(1)
-   for j = 5:25:G.cartDims(2)
-      c = ijk{1} == i & ijk{2} == j;
-      if any(c)
-         c = find(c);
-         x = gcz(c(1), 1); y = gcz(c(1), 2);
-         if x > 500 && x < 2000 && y < 7000 && y > 1000
-            % Set up rate controlled injectors for cells in the middle
-            % of the domain
-            val = sum(pv)/(1000*day);
-            type = 'rate';
-            name = ['I' num2str(ii)];
-            ii = ii + 1;
-         else
-            % Set up BHP controlled producers at the boundary of the
-            % domain
-            val = 250*barsa;
-            type = 'bhp';
-            name = ['P' num2str(pi)];
-            pi = pi + 1;
-         end
-         W = addWell(W, G, rock, c, 'Type', type, 'Val', val, ...
-             'Name', name, 'InnerProduct', 'ip_tpf');
-      end
-   end
+
+iw = [160, 246];
+jw = [30, 30];
+perforation = 9:20;
+for wel = 1:1:2
+    c = ijk{1} == iw(wel) & ijk{2} == jw(wel) & ismember(ijk{3}, perforation);
+    if any(c)
+    c = find(c);
+    if wel == 1
+        % Set up rate controlled injectors for cells in the middle
+        % of the domain
+        val = 7500/(30*365*day);
+        type = 'rate';
+        name = ['I' num2str(ii)];
+        ii = ii + 1;
+    else
+        % Set up rate controlled producers at the boundary of the
+        % domain
+        val = -7500/(30*365*day);
+        type = 'rate';
+        name = ['P' num2str(pi)];
+        pi = pi + 1;
+    end
+        W = addWell(W, G, rock, c, 'Type', type, 'Val', val, ...
+         'Name', name, 'InnerProduct', 'ip_tpf');
+    end
 end
+
 % Plot the resulting well setup
 clf
 plotCellData(G, rock.poro,'EdgeColor','k','EdgeAlpha',.1),
@@ -66,19 +69,7 @@ view(-100, 25)
 % grouped by time of flight. The distribution of phases is done based on a
 % simple hydrostatic approximation by using cell centroids. Some phase
 % mixing is present.
-state = initResSol(G, 200*barsa, [0 0 0]);
-
-gcz = G.cells.centroids(:, 3);
-height = max(gcz) - min(gcz);
-pos = 1 - (gcz - min(gcz))./height;
-
-oil = pos > 0.4 & pos < 0.8;
-gas = pos > 0.7;
-wat = pos < 0.45;
-
-state.s(wat, 1) = 1;
-state.s(oil, 2) = 1;
-state.s(gas, 3) = 1;
+state = initResSol(G, 200*barsa, [1 0 0]);
 
 state.s = bsxfun(@rdivide, state.s, sum(state.s, 2));
 
