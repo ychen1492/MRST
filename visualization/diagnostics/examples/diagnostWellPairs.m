@@ -14,7 +14,7 @@ close all
 % injectors in the center of the reservoir.
 
 % Grid
-grdecl = fullfile(getDatasetPath('Geothermal'), 'test_ouput.grdecl');
+grdecl = fullfile(getDatasetPath('Geothermal'), 'test_output_no_burden.grdecl');
 grdecl = readGRDECL(grdecl);
 
 actnum        = grdecl.ACTNUM;
@@ -35,14 +35,14 @@ wtarget  = [-7500*day, 7500*day];
 wrad     = [0.125, 0.125] .* meter;
 wloc     = [  246,   60;    30, 30];
 for w = 1 : numel(wtype)
-   W = verticalWell(W, G, rock, wloc(1,w), wloc(2,w), 9 : 20, ...
+   W = verticalWell(W, G, rock, wloc(1,w), wloc(2,w), 1:12, ...
                     'Type', wtype{w}, 'Val', wtarget(w), ...
                     'Radius', wrad(w), 'Name', wname{w}, ...
                     'InnerProduct', 'ip_tpf');
 end
 
 % Fluid: single-phase flow
-fluid = initSingleFluid('mu', 1*centi*poise, 'rho', 1014*kilogram/meter^3);
+fluid = initSingleFluid('mu', 1*centi*poise, 'rho', 998*kilogram/meter^3);
 
 %% Show model setup
 % We start by visualizing the reservoir and well pattern. We add a colorbar
@@ -61,7 +61,7 @@ set(gca,'Position',[.13 .17 .775 .785])
 %% Compute flow solution and diagnostic quantities
 % As usual, we only solve a single-phase flow problem to get the flow field
 % needed for the diagnostics
-rS = initState(G, W, 0);
+rS = initState(G, W, 200*barsa());
 T  = computeTrans(G, rock);
 rS = incompTPFA(rS, G, T, fluid, 'wells', W);
 D = computeTOFandTracer(rS, G, rock, 'wells', W);
@@ -83,7 +83,7 @@ set(gca,'dataaspect',[1 1 0.06]), view(-60,15); axis off
 clf(fig1);
 Gbb = cartGrid([1 1 1]);
 Gbb.nodes.coords = bsxfun(@mtimes,Gbb.nodes.coords,max(G.nodes.coords));
-plotCellData(G,D.ppart,D.ppart>1,'EdgeColor','k','EdgeAlpha',.05);
+plotCellData(G,D.ppart,D.ppart==1,'EdgeColor','k','EdgeAlpha',.05);
 plotGrid(Gbb,'FaceColor','none');
 plotWell(G,W,'height',2,'FontSize',14); axis tight; title('Drainage volumes');
 set(gca,'dataaspect',[1 1 0.06]), view(-60,15); axis off
