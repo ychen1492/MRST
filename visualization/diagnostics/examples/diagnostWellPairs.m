@@ -31,7 +31,7 @@ rock.perm = convertFrom(rock.perm, milli*darcy);
 W = [];
 wname    = {'P1', 'I1' };
 wtype    = {'rate', 'rate'};
-wtarget  = [-7500*day, 7500*day];
+wtarget  = [-0.08, 0.08];
 wrad     = [0.125, 0.125] .* meter;
 wloc     = [  246,   60;    30, 30];
 for w = 1 : numel(wtype)
@@ -165,10 +165,10 @@ set(gca,'dataaspect',[1 1 0.06]), view(120,15); axis off
 % that can be attributed to the different well segments. To this end, we
 % first recompute well-pair regions for all well segments and then use
 % accumarray to sum all well pairs that involve segments from I2.
-figure(fig2); clf
-WPp = computeWellPairs(rSp, G, rock, Wp, Dp);
-avols = accumarray(WPp.pairIx(:,1),WPp.vols);
-h = pie(avols(4:end)); set(h(2:2:end),'FontSize',16);
+% figure(fig2); clf
+% WPp = computeWellPairs(rSp, G, rock, Wp, Dp);
+% avols = accumarray(WPp.pairIx(:,1),WPp.vols);
+% h = pie(avols(4:end)); set(h(2:2:end),'FontSize',16);
 
 %% Copyright notice
 

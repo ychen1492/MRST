@@ -43,7 +43,7 @@ along with MRST.  If not, see <http://www.gnu.org/licenses/>.
 nW = numel(W);
 wellSol = repmat(struct('flux', [], 'pressure', []), [1, nW]);
 
-for w = 1 : nW,
+for w = 1 : nW
    wellSol(w).flux     = zeros([numel(W(w).cells), 1]);
    wellSol(w).pressure = p0;%repmat(p0, [numel(W(w).cells), 1]);
 end

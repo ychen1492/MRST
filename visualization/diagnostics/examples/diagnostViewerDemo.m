@@ -6,14 +6,15 @@
 mrstModule add diagnostics mrst-gui incomp
 
 %% Set up grid and rock
-grdecl = fullfile(getDatasetPath('Geothermal'), 'test_ouput.grdecl');
+grdecl = fullfile(getDatasetPath('Geothermal'), 'ho_reservoir.grdecl');
 grdecl = readGRDECL(grdecl);
 
 actnum        = grdecl.ACTNUM;
 grdecl.ACTNUM = ones(prod(grdecl.cartDims),1);
 G             = processGRDECL(grdecl, 'checkgrid', false);
 G             = computeGeometry(G(1));
-
+ext_faces = find(G.faces.neighbors(:, 1) == 0 | G.faces.neighbors(:, 2) == 0);
+bc = addBC([], ext_faces, 'pressure', 1000);
 rock = grdecl2Rock(grdecl, G.cells.indexMap);
 is_pos                = rock.perm(:, 3) > 0;
 rock.perm(~is_pos, 3) = min(rock.perm(is_pos, 3));
@@ -30,9 +31,9 @@ gcz = G.cells.centroids;
 x = [];
 [pi,ii] = deal(1);
 
-iw = [160, 246];
-jw = [30, 30];
-perforation = 9:20;
+iw = [133, 205];
+jw = [116, 116];
+perforation = 5:20;
 for wel = 1:1:2
     c = ijk{1} == iw(wel) & ijk{2} == jw(wel) & ismember(ijk{3}, perforation);
     if any(c)
@@ -40,14 +41,14 @@ for wel = 1:1:2
     if wel == 1
         % Set up rate controlled injectors for cells in the middle
         % of the domain
-        val = 7500/(30*365*day);
+        val = 0.1;
         type = 'rate';
         name = ['I' num2str(ii)];
         ii = ii + 1;
     else
         % Set up rate controlled producers at the boundary of the
         % domain
-        val = -7500/(30*365*day);
+        val = -0.1;
         type = 'rate';
         name = ['P' num2str(pi)];
         pi = pi + 1;
@@ -69,9 +70,13 @@ view(-100, 25)
 % grouped by time of flight. The distribution of phases is done based on a
 % simple hydrostatic approximation by using cell centroids. Some phase
 % mixing is present.
+fluid = initSingleFluid('mu', 1*centi*poise, 'rho', 987*kilogram/meter^3);
 state = initResSol(G, 200*barsa, [1 0 0]);
 
 state.s = bsxfun(@rdivide, state.s, sum(state.s, 2));
+% model = WaterModel(G, rock, fluid);
+% state = standaloneSolveAD(state0, model, 1*year, 'W', W);
+% D = computeTOFandTracer(state, G, rock, 'wells', W);
 
 clf;
 rgb = @(x) x(:, [2 3 1]);
@@ -84,7 +89,8 @@ axis tight
 % functionality.
 help interactiveDiagnostics
 clf;
-interactiveDiagnostics(G, rock, W, 'state', state);
+
+interactiveDiagnostics(G, rock, W, 'state', state, 'tracerfluid', fluid);
 view(-100, 25)
 axis tight
 
